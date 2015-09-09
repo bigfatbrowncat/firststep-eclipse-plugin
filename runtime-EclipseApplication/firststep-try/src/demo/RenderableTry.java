@@ -1,7 +1,7 @@
 package demo;
 import firststep.Color;
 import firststep.Framebuffer;
-import firststep.Renderable;
+import firststep.contracts.Renderable;
 
 public class RenderableTry implements Renderable {
 
@@ -9,7 +9,8 @@ public class RenderableTry implements Renderable {
 	public void render(Framebuffer fb) {
 		fb.beginDrawing();
 		fb.beginPath();
-		fb.circle(250, 110, 60);
+		int d = 60;
+		fb.circle(fb.getWidth() / 2, fb.getHeight() / 2, d);
 		fb.fill( );
 		
 		fb.beginPath();
@@ -20,9 +21,5 @@ public class RenderableTry implements Renderable {
 		fb.endDrawing();
 	}
 
-	@Override
-	public int test(int i) {
-		return i * 2;
-	}
 
 }

@@ -404,24 +404,28 @@ public class FirstStepPreviewView extends ViewPart {
 			//ICompilationUnit javaFile = (ICompilationUnit) JavaCore.create(file);
 			
 	    	
-	    	
+	    	ArrayList<IType> renderableTypes = new ArrayList<>();
 			Map<IType, IClassFile> classFiles = getClassFilesForAllTypesInFile(file.getProject(), file);
 			for (IType t : classFiles.keySet()) {
+				// Checking if superinterfaces list contains "firststep.Renderable"
 				for (String sits : t.getSuperInterfaceNames()) {
-					System.out.println(sits);
+					String[][] qname = t.resolveType(sits);
+					if (qname != null && qname.length == 1 && 
+							qname[0][0].equals("firststep.contracts") && 
+							qname[0][1].equals("Renderable")) {
+						
+						renderableTypes.add(t);
+						break;
+					}
 				}
 			}
-			for (IType tp : classFiles.keySet()) {
-				IClassFile cf = classFiles.get(tp);
+			
+			if (renderableTypes.size() == 0) throw new IOException("There is no firststep.contracts.Renderable implementations in the opened file");
+			
+			for (IType tp : renderableTypes) {
 
 				URL classURL = new URL(workspacePath.toURL(), javaProject.getOutputLocation().toFile().toString().substring(1) + "/" /*cf.getPath().toFile().getParentFile().getParent().substring(1) + "/"*/ );
-				//String name = cf.getPath().toFile().getName().replaceAll("\\.class$", "");
-				//System.out.println("Class " + cf.getType().getTypeQualifiedName() + ", URL: " + classURL.toString() + ", name: " + name);
 				try (URLClassLoader ucl = new URLClassLoader(new URL[] { classURL }, Framebuffer.class.getClassLoader())) {
-					//CCLoader ccl = new CCLoader(ucl);
-					//ccl.setClassContent(tp.getFullyQualifiedName(), cf);
-					
-					//Class<?> loadedRenderableClass = Activator.getDefault().getBundle().loadClass(tp.getFullyQualifiedName());
 					Class<?> loadedRenderableClass = ucl.loadClass(tp.getFullyQualifiedName());
 						
 					Constructor<?> loadedRenderableConstructor = loadedRenderableClass.getConstructor();
@@ -434,7 +438,6 @@ public class FirstStepPreviewView extends ViewPart {
 				}
 			}
 		} catch (IOException | CoreException | ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException e) {
-			e.printStackTrace();
 			viewer.setRenderMethod(null, null);
 			viewer.setMessageException(e);
 		} catch (InvocationTargetException e) {

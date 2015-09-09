@@ -1,25 +1,15 @@
 package first_step_plugin;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
-import org.eclipse.core.resources.ISaveContext;
-import org.eclipse.core.resources.ISaveParticipant;
-import org.eclipse.core.resources.ISavedState;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IPartListener;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.application.DisplayAccess;
-import org.eclipse.ui.internal.UISynchronizer;
-import org.eclipse.ui.internal.Workbench;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
@@ -73,13 +63,10 @@ public class Activator extends AbstractUIPlugin {
 				});
 			}
 		};
-		workspace.addResourceChangeListener(listener,
-				IResourceChangeEvent.POST_BUILD/*
-												 * | IResourceChangeEvent.
-												 * POST_CHANGE
-												 */);
+		workspace.addResourceChangeListener(listener, IResourceChangeEvent.POST_BUILD);
 		
-		 Workbench.getInstance().getActiveWorkbenchWindow().getPartService().addPartListener(new IPartListener() {
+		
+		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getPartService().addPartListener(new IPartListener() {
 			
 			@Override
 			public void partOpened(IWorkbenchPart part) { }
