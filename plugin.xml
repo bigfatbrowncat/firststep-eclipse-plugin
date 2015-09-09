@@ -5,15 +5,15 @@
    <extension
          point="org.eclipse.ui.views">
       <category
-            name="Render"
+            name="FirstStep"
             id="first-step-plugin">
       </category>
       <view
-            name="FirstStep Graphics"
+            name="FirstStep Preview"
             icon="icons/sample.gif"
             category="first-step-plugin"
-            class="firststepplugin.views.FirstStepGraphicsView"
-            id="firststepplugin.views.FirstStepGraphicsView">
+            class="firststepplugin.views.FirstStepPreviewView"
+            id="firststepplugin.views.FirstStepPreviewView">
       </view>
    </extension>
    <extension
@@ -21,10 +21,11 @@
       <perspectiveExtension
             targetID="org.eclipse.jdt.ui.JavaPerspective">
          <view
-               ratio="0.5"
-               relative="org.eclipse.ui.views.ProblemView"
-               relationship="right"
-               id="firststepplugin.views.FirstStepGraphicsView">
+               id="firststepplugin.views.FirstStepPreviewView"
+               ratio="0.4"
+               relationship="stack"
+               relative="org.eclipse.ui.views.ContentOutline"
+               visible="true">
          </view>
       </perspectiveExtension>
    </extension>

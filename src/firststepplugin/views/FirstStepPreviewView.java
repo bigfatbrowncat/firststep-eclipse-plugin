@@ -79,12 +79,12 @@ import firststep.Framebuffer;
  * <p>
  */
 
-public class FirstStepGraphicsView extends ViewPart {
+public class FirstStepPreviewView extends ViewPart {
 
 	/**
 	 * The ID of the view as specified by the extension.
 	 */
-	public static final String ID = "firststepplugin.views.FirstStepGraphicsView";
+	public static final String ID = "firststepplugin.views.FirstStepPreviewView";
 
 	private OpenGLViewer viewer;
 	private Action action1;
@@ -128,7 +128,7 @@ public class FirstStepGraphicsView extends ViewPart {
 	/**
 	 * The constructor.
 	 */
-	public FirstStepGraphicsView() {
+	public FirstStepPreviewView() {
 	}
 
 	/**
@@ -157,7 +157,7 @@ public class FirstStepGraphicsView extends ViewPart {
 		menuMgr.setRemoveAllWhenShown(true);
 		menuMgr.addMenuListener(new IMenuListener() {
 			public void menuAboutToShow(IMenuManager manager) {
-				FirstStepGraphicsView.this.fillContextMenu(manager);
+				FirstStepPreviewView.this.fillContextMenu(manager);
 			}
 		});
 		Menu menu = menuMgr.createContextMenu(viewer.getControl());
@@ -389,50 +389,57 @@ public class FirstStepGraphicsView extends ViewPart {
 			URI workspacePath = ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile().toURI();
 
 			IEditorPart editor = (IEditorPart) workbenchPart.getSite().getPage().getActiveEditor();
-			if (editor == null) throw new FileNotFoundException();
+			if (editor == null) throw new FileNotFoundException("No java editor open");
 			
 			IFile file = (IFile) editor.getEditorInput().getAdapter(IFile.class);
-			if (file == null) throw new FileNotFoundException();
+			if (file == null) throw new FileNotFoundException("The file being opened isn't a Java file");
 
-			if (file.getProject().hasNature(JavaCore.NATURE_ID)) {
-		    	IJavaProject javaProject = JavaCore.create(file.getProject());
-				//ICompilationUnit javaFile = (ICompilationUnit) JavaCore.create(file);
+			if (!file.getProject().hasNature(JavaCore.NATURE_ID) ||
+				!file.getProject().isNatureEnabled(JavaCore.NATURE_ID)) {
+			
+				new IOException("The project being opened isn't a Java project");
+			}
 				
-		    	
-		    	
-				Map<IType, IClassFile> classFiles = getClassFilesForAllTypesInFile(file.getProject(), file);
-				for (IType t : classFiles.keySet()) {
-					for (String sits : t.getSuperInterfaceNames()) {
-						System.out.println(sits);
-					}
+	    	IJavaProject javaProject = JavaCore.create(file.getProject());
+			//ICompilationUnit javaFile = (ICompilationUnit) JavaCore.create(file);
+			
+	    	
+	    	
+			Map<IType, IClassFile> classFiles = getClassFilesForAllTypesInFile(file.getProject(), file);
+			for (IType t : classFiles.keySet()) {
+				for (String sits : t.getSuperInterfaceNames()) {
+					System.out.println(sits);
 				}
-				for (IType tp : classFiles.keySet()) {
-					IClassFile cf = classFiles.get(tp);
+			}
+			for (IType tp : classFiles.keySet()) {
+				IClassFile cf = classFiles.get(tp);
 
-					URL classURL = new URL(workspacePath.toURL(), javaProject.getOutputLocation().toFile().toString().substring(1) + "/" /*cf.getPath().toFile().getParentFile().getParent().substring(1) + "/"*/ );
-					//String name = cf.getPath().toFile().getName().replaceAll("\\.class$", "");
-					//System.out.println("Class " + cf.getType().getTypeQualifiedName() + ", URL: " + classURL.toString() + ", name: " + name);
-					try (URLClassLoader ucl = new URLClassLoader(new URL[] { classURL }, Framebuffer.class.getClassLoader())) {
-						//CCLoader ccl = new CCLoader(ucl);
-						//ccl.setClassContent(tp.getFullyQualifiedName(), cf);
+				URL classURL = new URL(workspacePath.toURL(), javaProject.getOutputLocation().toFile().toString().substring(1) + "/" /*cf.getPath().toFile().getParentFile().getParent().substring(1) + "/"*/ );
+				//String name = cf.getPath().toFile().getName().replaceAll("\\.class$", "");
+				//System.out.println("Class " + cf.getType().getTypeQualifiedName() + ", URL: " + classURL.toString() + ", name: " + name);
+				try (URLClassLoader ucl = new URLClassLoader(new URL[] { classURL }, Framebuffer.class.getClassLoader())) {
+					//CCLoader ccl = new CCLoader(ucl);
+					//ccl.setClassContent(tp.getFullyQualifiedName(), cf);
+					
+					//Class<?> loadedRenderableClass = Activator.getDefault().getBundle().loadClass(tp.getFullyQualifiedName());
+					Class<?> loadedRenderableClass = ucl.loadClass(tp.getFullyQualifiedName());
 						
-						//Class<?> loadedRenderableClass = Activator.getDefault().getBundle().loadClass(tp.getFullyQualifiedName());
-						Class<?> loadedRenderableClass = ucl.loadClass(tp.getFullyQualifiedName());
-							
-						Constructor<?> loadedRenderableConstructor = loadedRenderableClass.getConstructor();
-						Object loadedRenderableInstance = loadedRenderableConstructor.newInstance();
-						Method testMethod = loadedRenderableClass.getMethod("render", Framebuffer.class);
-	
-						viewer.setRenderMethod(loadedRenderableInstance, testMethod);
-						
-					}
+					Constructor<?> loadedRenderableConstructor = loadedRenderableClass.getConstructor();
+					Object loadedRenderableInstance = loadedRenderableConstructor.newInstance();
+					Method testMethod = loadedRenderableClass.getMethod("render", Framebuffer.class);
+
+					viewer.setRenderMethod(loadedRenderableInstance, testMethod);
+					viewer.setMessageException(null);
+					viewer.refresh();
 				}
-		    } else {
-		    	showMessage("Project isn't a Java project");
-		    }
-		} catch (IOException | CoreException | ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			}
+		} catch (IOException | CoreException | ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException e) {
 			e.printStackTrace();
 			viewer.setRenderMethod(null, null);
+			viewer.setMessageException(e);
+		} catch (InvocationTargetException e) {
+			viewer.setRenderMethod(null, null);
+			viewer.setMessageException(e.getCause());
 		}
 	}
 }

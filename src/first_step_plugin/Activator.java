@@ -23,7 +23,7 @@ import org.eclipse.ui.internal.Workbench;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
-import firststepplugin.views.FirstStepGraphicsView;
+import firststepplugin.views.FirstStepPreviewView;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -45,7 +45,7 @@ public class Activator extends AbstractUIPlugin {
 	private void updateGraphicsView() {
 		IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		if (window != null) {
-			FirstStepGraphicsView view = (FirstStepGraphicsView)window.getActivePage().findView(FirstStepGraphicsView.ID);
+			FirstStepPreviewView view = (FirstStepPreviewView)window.getActivePage().findView(FirstStepPreviewView.ID);
 			if (view != null) {
 				view.updateImage();
 			}
@@ -73,33 +73,27 @@ public class Activator extends AbstractUIPlugin {
 				});
 			}
 		};
-		workspace.addResourceChangeListener(listener, IResourceChangeEvent.POST_BUILD/* | IResourceChangeEvent.POST_CHANGE*/);
+		workspace.addResourceChangeListener(listener,
+				IResourceChangeEvent.POST_BUILD/*
+												 * | IResourceChangeEvent.
+												 * POST_CHANGE
+												 */);
 		
 		 Workbench.getInstance().getActiveWorkbenchWindow().getPartService().addPartListener(new IPartListener() {
 			
 			@Override
-			public void partOpened(IWorkbenchPart part) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void partOpened(IWorkbenchPart part) { }
 			
 			@Override
-			public void partDeactivated(IWorkbenchPart part) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void partDeactivated(IWorkbenchPart part) { }
 			
 			@Override
 			public void partClosed(IWorkbenchPart part) {
-				// TODO Auto-generated method stub
-				
+				updateGraphicsView();
 			}
 			
 			@Override
-			public void partBroughtToTop(IWorkbenchPart part) {
-				// TODO Auto-generated method stub
-				
-			}
+			public void partBroughtToTop(IWorkbenchPart part) { }
 			
 			@Override
 			public void partActivated(IWorkbenchPart part) {

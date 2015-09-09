@@ -9,7 +9,7 @@ public class RenderableTry implements Renderable {
 	public void render(Framebuffer fb) {
 		fb.beginDrawing();
 		fb.beginPath();
-		fb.circle(260, 210, 60);
+		fb.circle(250, 110, 60);
 		fb.fill( );
 		
 		fb.beginPath();
