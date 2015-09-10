@@ -3,12 +3,14 @@ package firststepplugin.views;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,6 +40,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.internal.compiler.tool.EclipseCompiler;
 import org.eclipse.jdt.internal.compiler.tool.EclipseCompilerImpl;
+import org.eclipse.jdt.internal.core.JavaProject;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
@@ -399,7 +402,7 @@ public class FirstStepPreviewView extends ViewPart {
 			
 				new IOException("The project being opened isn't a Java project");
 			}
-				
+			
 	    	IJavaProject javaProject = JavaCore.create(file.getProject());
 			//ICompilationUnit javaFile = (ICompilationUnit) JavaCore.create(file);
 			
@@ -421,11 +424,24 @@ public class FirstStepPreviewView extends ViewPart {
 			}
 			
 			if (renderableTypes.size() == 0) throw new IOException("There is no firststep.contracts.Renderable implementations in the opened file");
+
+			// Constructing the target .class files folder
+			// 1. Getting the raw path to the project
+			IPath rawProjectPath = javaProject.getProject().getRawLocation();
+			// 2. Getting the output path related to the workspace root
+			IPath outputPath = javaProject.getOutputLocation();
+			// 3. Cutting away the project folder from it
+			outputPath = outputPath.removeFirstSegments(1);
+			// 4. Concatenating
+			IPath targetPath = rawProjectPath.append(outputPath).addTrailingSeparator();
+			
+			URL classURL = targetPath.toFile().toURI().toURL();
+
 			
 			for (IType tp : renderableTypes) {
 
-				URL classURL = new URL(workspacePath.toURL(), javaProject.getOutputLocation().toFile().toString().substring(1) + "/" /*cf.getPath().toFile().getParentFile().getParent().substring(1) + "/"*/ );
 				try (URLClassLoader ucl = new URLClassLoader(new URL[] { classURL }, Framebuffer.class.getClassLoader())) {
+					
 					Class<?> loadedRenderableClass = ucl.loadClass(tp.getFullyQualifiedName());
 						
 					Constructor<?> loadedRenderableConstructor = loadedRenderableClass.getConstructor();
