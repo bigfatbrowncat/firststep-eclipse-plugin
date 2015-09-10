@@ -10,7 +10,7 @@ import org.eclipse.swt.opengl.GLData;
  * This is the OS X x86_64 version of the widget
  */
 
-public class OSXPatchedGLCanvas extends Canvas {
+public class WrappedGLCanvas extends Canvas {
 	NSOpenGLContext context;
 	NSOpenGLPixelFormat pixelFormat;
 	
@@ -30,7 +30,7 @@ public class OSXPatchedGLCanvas extends Canvas {
  *     <li>ERROR_UNSUPPORTED_DEPTH when the requested attributes cannot be provided</ul> 
  * </ul>
  */
-public OSXPatchedGLCanvas (Composite parent, int style, GLData data) {
+public WrappedGLCanvas (Composite parent, int style, GLData data) {
 	super (parent, style);
 	if (data == null) SWT.error (SWT.ERROR_NULL_ARGUMENT);
 	int attrib [] = new int [MAX_ATTRIBUTES];

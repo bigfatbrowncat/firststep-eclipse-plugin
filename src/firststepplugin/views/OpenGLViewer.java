@@ -11,25 +11,18 @@ import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
-import org.eclipse.swt.layout.FillLayout;
-import org.eclipse.swt.opengl.GLCanvas;
 import org.eclipse.swt.opengl.GLData;
-import org.eclipse.swt.opengl.OSXPatchedGLCanvas;
-import org.eclipse.swt.widgets.Canvas;
+import org.eclipse.swt.opengl.WrappedGLCanvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 
-import firststep.Color;
 import firststep.MainFramebuffer;
-import firststep.Window;
 import firststep.internal.GL3W;
-import firststep.internal.OS;
-import firststep.internal.OS.Platform;
 
 public class OpenGLViewer extends Viewer {
 	
 	private MainFramebuffer mainFramebuffer;
-	private Canvas /* GLCanvas or OSXPatchedGLCanvas */ glCanvas;
+	private WrappedGLCanvas glCanvas;
 	private RenderErrorView errorView;
 	private StackLayout stackLayout;
 	
@@ -48,22 +41,7 @@ public class OpenGLViewer extends Viewer {
 	
 	private Composite parent;
 	
-	private void canvasSetCurrent() {
-		if (SWT.getPlatform().equals("cocoa")) {
-			((OSXPatchedGLCanvas)glCanvas).setCurrent();
-		} else {
-			((GLCanvas)glCanvas).setCurrent();
-		}
-	}
 
-	private void canvasSwapBuffers() {
-		if (SWT.getPlatform().equals("cocoa")) {
-			((OSXPatchedGLCanvas)glCanvas).swapBuffers();
-		} else {
-			((GLCanvas)glCanvas).swapBuffers();
-		}
-	}
-	
 	public OpenGLViewer(Composite parent, int style) {
 		this.parent = parent;
 		stackLayout = new StackLayout();
@@ -73,14 +51,8 @@ public class OpenGLViewer extends Viewer {
 		data.doubleBuffer = true;
 		errorView = new RenderErrorView(parent, style);
 		
-		if (SWT.getPlatform().equals("cocoa")) {
-			// On OS X we have a special OpenGL canvas implementation to support GL3
-			glCanvas = new OSXPatchedGLCanvas(parent, style | SWT.NO_BACKGROUND, data);
-		} else {
-			// On other platforms the default implementation is sufficient
-			glCanvas = new GLCanvas(parent, style | SWT.NO_BACKGROUND, data);
-		}
-		canvasSetCurrent();
+		glCanvas = new WrappedGLCanvas(parent, style | SWT.NO_BACKGROUND, data);
+		glCanvas.setCurrent();
 		
 		GL3W.init();
 		System.out.println("OpenGL version: " + GL3W.getGLVersionMajor() + "." + GL3W.getGLSLVersionMinor());
@@ -103,7 +75,7 @@ public class OpenGLViewer extends Viewer {
 			
 			@Override
 			public void paintControl(PaintEvent e) {
-				canvasSetCurrent();
+				glCanvas.setCurrent();
 				MainFramebuffer.ensureNanoVGContextCreated();
 				
 				try {
@@ -125,7 +97,7 @@ public class OpenGLViewer extends Viewer {
 					setMessageException(e2);
 				}
 				
-				canvasSwapBuffers();
+				glCanvas.swapBuffers();
 			}
 		});
 	}
