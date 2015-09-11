@@ -21,7 +21,8 @@ import firststep.internal.GL3W;
 
 public class OpenGLViewer extends Viewer {
 	
-	private MainFramebuffer mainFramebuffer;
+	private static MainFramebuffer mainFramebuffer;
+
 	private WrappedGLCanvas glCanvas;
 	private RenderErrorView errorView;
 	private StackLayout stackLayout;
@@ -41,6 +42,7 @@ public class OpenGLViewer extends Viewer {
 	
 	private Composite parent;
 	
+	private static boolean gl3wInitialized;
 
 	public OpenGLViewer(Composite parent, int style) {
 		this.parent = parent;
@@ -53,10 +55,12 @@ public class OpenGLViewer extends Viewer {
 		
 		glCanvas = new WrappedGLCanvas(parent, style | SWT.NO_BACKGROUND, data);
 		glCanvas.setCurrent();
-		
-		GL3W.init();
-		System.out.println("OpenGL version: " + GL3W.getGLVersionMajor() + "." + GL3W.getGLSLVersionMinor());
+		if (!gl3wInitialized) {
+			GL3W.init();
+			gl3wInitialized = true;
+		}
 		mainFramebuffer = new MainFramebuffer(glCanvas.getSize().x, glCanvas.getSize().y);
+		System.out.println("OpenGL version: " + GL3W.getGLVersionMajor() + "." + GL3W.getGLSLVersionMinor());
 		
 //		glCanvas.setVisible(true);
 		
@@ -76,12 +80,17 @@ public class OpenGLViewer extends Viewer {
 			@Override
 			public void paintControl(PaintEvent e) {
 				glCanvas.setCurrent();
-				MainFramebuffer.ensureNanoVGContextCreated();
 				
 				try {
 					mainFramebuffer.clearDrawingStack();
 					if (renderMethod != null && loadedRenderableInstance != null) {
+						
+						// Beginning the drawing process outside of a Renderable
+						mainFramebuffer.beginDrawing();
 						renderMethod.invoke(loadedRenderableInstance, mainFramebuffer);
+						// Ending the drawing process outside of a Renderable
+						mainFramebuffer.endDrawing();
+						
 						mainFramebuffer.checkStackClear();
 						setMessageException(null);
 					} else {
@@ -146,4 +155,8 @@ public class OpenGLViewer extends Viewer {
 
 	}
 
+	public void dispose() {
+		if (!glCanvas.isDisposed()) glCanvas.dispose();
+		if (!errorView.isDisposed()) errorView.dispose();
+	}
 }

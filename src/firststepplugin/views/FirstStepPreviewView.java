@@ -461,4 +461,10 @@ public class FirstStepPreviewView extends ViewPart {
 			viewer.setMessageException(e.getCause());
 		}
 	}
+	
+	@Override
+	public void dispose() {
+		viewer.dispose();
+		super.dispose();
+	}
 }
