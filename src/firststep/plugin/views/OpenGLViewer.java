@@ -1,4 +1,4 @@
-package firststepplugin.views;
+package firststep.plugin.views;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

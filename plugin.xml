@@ -6,22 +6,24 @@
          point="org.eclipse.ui.views">
       <category
             name="FirstStep"
-            id="first-step-plugin">
+            id="firststep.plugin">
       </category>
+      
       <view
             name="FirstStep Preview"
             icon="icons/sample.gif"
-            category="first-step-plugin"
-            class="firststepplugin.views.FirstStepPreviewView"
-            id="firststepplugin.views.FirstStepPreviewView">
+            category="firststep.plugin"
+            class="firststep.plugin.views.FirstStepPreviewView"
+            id="firststep.plugin.views.FirstStepPreviewView">
       </view>
    </extension>
+   
    <extension
          point="org.eclipse.ui.perspectiveExtensions">
       <perspectiveExtension
             targetID="org.eclipse.jdt.ui.JavaPerspective">
          <view
-               id="firststepplugin.views.FirstStepPreviewView"
+               id="firststep.plugin.views.FirstStepPreviewView"
                ratio="0.4"
                relationship="stack"
                relative="org.eclipse.ui.views.ContentOutline"
@@ -29,11 +31,40 @@
          </view>
       </perspectiveExtension>
    </extension>
+   
+   <extension
+       point="org.eclipse.jdt.core.classpathContainerInitializer">
+      <classpathContainerInitializer
+          id="firststep.plugin.container.FIRSTSTEP_CONTAINER"
+          class="firststep.plugin.container.FirstStepContainerInitializer"/>
+   </extension>
+
+   <extension
+       point="org.eclipse.jdt.ui.classpathContainerPage">
+      <classpathContainerPage
+          id="firststep.plugin.container.FIRSTSTEP_CONTAINER"
+          name="FirstStep Library Container"
+          class="firststep.plugin.container.FirstStepContainerPage"/>
+   </extension>
+
+<!--   <extension
+         point="org.eclipse.jdt.ui.javaElementFilters">
+         <filter
+               id="org.container.directory.ContainerDirFilter"
+               targetId="org.eclipse.jdt.ui.PackageExplorer"
+               enabled="true"
+               name="Classpath Directory Container"
+               description="Dynamically include jar files from this directory in the classpath"
+               class="firststep.plugin.container.ContainerDirFilter"/>
+   </extension>-->
+   
    <extension
          point="org.eclipse.help.contexts">
       <contexts
             file="contexts.xml">
       </contexts>
    </extension>
+   
+   
 
 </plugin>

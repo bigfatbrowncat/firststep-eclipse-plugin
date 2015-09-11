@@ -1,4 +1,4 @@
-package first_step_plugin;
+package firststep.plugin;
 
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
@@ -13,7 +13,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
-import firststepplugin.views.FirstStepPreviewView;
+import firststep.plugin.views.FirstStepPreviewView;
 
 /**
  * The activator class controls the plug-in life cycle
@@ -21,7 +21,7 @@ import firststepplugin.views.FirstStepPreviewView;
 public class Activator extends AbstractUIPlugin {
 
 	// The plug-in ID
-	public static final String PLUGIN_ID = "first-step-plugin"; //$NON-NLS-1$
+	public static final String PLUGIN_ID = "firststep.plugin"; //$NON-NLS-1$
 
 	// The shared instance
 	private static Activator plugin;

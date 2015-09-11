@@ -1,4 +1,4 @@
-package firststepplugin.views;
+package firststep.plugin.views;
 
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.layout.GridLayout;
