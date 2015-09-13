@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -234,7 +235,7 @@ public class FirstStepPreviewView extends ViewPart {
 			IClasspathEntry entries[] = jp.getResolvedClasspath(true);
 			for(int i=0; i<entries.length; i++) {
 				IClasspathEntry entry = entries[i];
-				if(entry.getEntryKind() == IClasspathEntry.CPE_LIBRARY) {
+				if (entry.getEntryKind() == IClasspathEntry.CPE_LIBRARY) {
 					containers.add(entry);
 				}
 			}
@@ -364,7 +365,73 @@ public class FirstStepPreviewView extends ViewPart {
 		}
 
 	}*/
+	private void appendBySuperInterface(ArrayList<IType> res, Map<IType, IClassFile> classFiles, String pkg, String name) throws JavaModelException {
+    	ArrayList<IType> filteredTypes = res;
+		for (IType t : classFiles.keySet()) {
+			// Checking if superinterfaces list contains "firststep.Renderable"
+			for (String sits : t.getSuperInterfaceNames()) {
+				String[][] qname = t.resolveType(sits);
+				if (qname != null && qname.length == 1 && 
+						qname[0][0].equals(pkg) && 
+						qname[0][1].equals(name)) {
+					
+					filteredTypes.add(t);
+					break;
+				}
+			}
+		}
+	}
+	
+	private List<URL> listClasspathURLs(IJavaProject javaProject) throws JavaModelException, MalformedURLException {
+		// Constructing the target .class files folder
+		// 1. Getting the raw path to the project
+		IPath rawProjectPath = javaProject.getProject().getRawLocation();
+		if (rawProjectPath == null) {
+			rawProjectPath = javaProject.getProject().getLocation();
+		}
+		// 2. Getting the output path related to the workspace root
+		IPath outputPath = javaProject.getOutputLocation();
+		// 3. Cutting away the project folder from it
+		outputPath = outputPath.removeFirstSegments(1);
+		// 4. Concatenating
+		IPath targetPath = rawProjectPath.append(outputPath).addTrailingSeparator();
+		
+		URL classURL = targetPath.toFile().toURI().toURL();
+		ArrayList<URL> urls = new ArrayList<URL>();
+		urls.add(classURL);
+		List<IClasspathEntry> l = getJarContainerEntries(javaProject);
+		for (IClasspathEntry e : l) {
+			urls.add(e.getPath().toFile().toURI().toURL());
+		}
+		return urls;
+	}
+	
+	private boolean drawRenderable(IJavaProject javaProject, Map<IType, IClassFile> classFiles) throws JavaModelException, IOException, ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    	ArrayList<IType> renderableTypes = new ArrayList<>();
+    	appendBySuperInterface(renderableTypes, classFiles, "firststep.contracts", "Renderable");
+    	appendBySuperInterface(renderableTypes, classFiles, "firststep.contracts", "Animatable");
+		
+		if (renderableTypes.size() == 0) return false;
 
+		List<URL> urls = listClasspathURLs(javaProject);
+		
+		IType tp = renderableTypes.get(0);	// TODO Support multiple types
+		{
+
+			try (URLClassLoader ucl = new URLClassLoader(urls.toArray(new URL[] {}), getClass().getClassLoader())) {
+				
+				Class<?> loadedRenderableClass = ucl.loadClass(tp.getFullyQualifiedName());
+				//Class<?> framebufferClass = ucl.loadClass("firststep.Framebuffer");
+					
+				Constructor<?> loadedRenderableConstructor = loadedRenderableClass.getConstructor();
+				Object loadedRenderableInstance = loadedRenderableConstructor.newInstance();
+
+				viewer.setNewRenderableInstance(ucl, loadedRenderableInstance);
+			}
+		}
+		return true;
+	}
+	
 	public void updateImage() {
 		try {
 			
@@ -375,7 +442,7 @@ public class FirstStepPreviewView extends ViewPart {
 			if (editor == null) throw new FileNotFoundException("No java editor open");
 			
 			IFile file = (IFile) editor.getEditorInput().getAdapter(IFile.class);
-			if (file == null) throw new FileNotFoundException("The file being opened isn't a Java file");
+			if (file == null) throw new FileNotFoundException("The file being opened isn't a Java file");	// TODO ???
 
 			if (!file.getProject().hasNature(JavaCore.NATURE_ID) ||
 				!file.getProject().isNatureEnabled(JavaCore.NATURE_ID)) {
@@ -387,68 +454,20 @@ public class FirstStepPreviewView extends ViewPart {
 			//ICompilationUnit javaFile = (ICompilationUnit) JavaCore.create(file);
 			
 	    	
-	    	ArrayList<IType> renderableTypes = new ArrayList<>();
 			Map<IType, IClassFile> classFiles = getClassFilesForAllTypesInFile(file.getProject(), file);
-			for (IType t : classFiles.keySet()) {
-				// Checking if superinterfaces list contains "firststep.Renderable"
-				for (String sits : t.getSuperInterfaceNames()) {
-					String[][] qname = t.resolveType(sits);
-					if (qname != null && qname.length == 1 && 
-							qname[0][0].equals("firststep.contracts") && 
-							qname[0][1].equals("Renderable")) {
-						
-						renderableTypes.add(t);
-						break;
-					}
-				}
+			if (!drawRenderable(javaProject, classFiles)) {
+				throw new IOException("There is no firststep.contracts.Renderable implementations in the opened file");
 			}
-			
-			if (renderableTypes.size() == 0) throw new IOException("There is no firststep.contracts.Renderable implementations in the opened file");
-
-			// Constructing the target .class files folder
-			// 1. Getting the raw path to the project
-			IPath rawProjectPath = javaProject.getProject().getRawLocation();
-			if (rawProjectPath == null) {
-				rawProjectPath = javaProject.getProject().getLocation();
-			}
-			// 2. Getting the output path related to the workspace root
-			IPath outputPath = javaProject.getOutputLocation();
-			// 3. Cutting away the project folder from it
-			outputPath = outputPath.removeFirstSegments(1);
-			// 4. Concatenating
-			IPath targetPath = rawProjectPath.append(outputPath).addTrailingSeparator();
-			
-			URL classURL = targetPath.toFile().toURI().toURL();
-			ArrayList<URL> urls = new ArrayList<URL>();
-			urls.add(classURL);
-			List<IClasspathEntry> l = getJarContainerEntries(javaProject);
-			for (IClasspathEntry e : l) {
-				urls.add(e.getPath().toFile().toURI().toURL());
-			}
-			
-			for (IType tp : renderableTypes) {
-
-				try (URLClassLoader ucl = new URLClassLoader(urls.toArray(new URL[] {}), getClass().getClassLoader())) {
-					
-					Class<?> loadedRenderableClass = ucl.loadClass(tp.getFullyQualifiedName());
-					Class<?> framebufferClass = ucl.loadClass("firststep.Framebuffer");
-						
-					Constructor<?> loadedRenderableConstructor = loadedRenderableClass.getConstructor();
-					Object loadedRenderableInstance = loadedRenderableConstructor.newInstance();
-					Method testMethod = loadedRenderableClass.getMethod("render", framebufferClass);
-
-					viewer.setRenderMethod(loadedRenderableInstance, testMethod);
-					viewer.setMessageException(null);
-					viewer.refresh();
-				}
-			}
+		
 		} catch (IOException | CoreException | ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException e) {
-			viewer.setRenderMethod(null, null);
+			viewer.setNewRenderableInstance(null, null);
 			viewer.setMessageException(e);
 		} catch (InvocationTargetException e) {
-			viewer.setRenderMethod(null, null);
+			viewer.setNewRenderableInstance(null, null);
 			viewer.setMessageException(e.getCause());
 		}
+			
+
 	}
 	
 	@Override

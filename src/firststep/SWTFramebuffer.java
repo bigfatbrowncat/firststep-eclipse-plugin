@@ -12,25 +12,55 @@ import org.eclipse.swt.opengl.GLData;
 import org.eclipse.swt.opengl.WrappedGLCanvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 
 import firststep.Framebuffer;
 import firststep.internal.GL3W;
 
 public class SWTFramebuffer extends Framebuffer {
 
-	public interface ExceptionHandler {
-		void handle(Throwable t);
+	private static final int FPS = 30;
+	
+	public interface Handler {
+		void handleException(Throwable t);
+		void draw(Framebuffer framebuffer) throws Exception;
+		void frame();
+	}
+	
+	private class RefreshingThread extends Thread {
+		volatile boolean killSelf = false;
+		
+		@Override
+		public void run() {
+			while (!killSelf) {
+				if (handler != null) handler.frame();
+				Display.getDefault().syncExec(new Runnable() {
+					
+					@Override
+					public void run() {
+						if (!glCanvas.isDisposed() && glCanvas.isVisible()) {
+							glCanvas.redraw();
+						}
+					}
+				});
+				
+				try {
+					Thread.sleep(1000 / FPS);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 	
 	private static boolean gl3wInitialized = false;
 
 	private WrappedGLCanvas glCanvas;
-	private Object loadedRenderableInstance;
-	private Method renderMethod;
-	private ExceptionHandler exceptionHandler;
+	private volatile Handler handler;
+	private RefreshingThread refreshingThread = new RefreshingThread();
 	
-	public void setExceptionHandler(ExceptionHandler exceptionHandler) {
-		this.exceptionHandler = exceptionHandler;
+	public void setHandler(Handler handler) {
+		this.handler = handler;
 	}
 
 	private static WrappedGLCanvas createCanvas(Composite parent, int style) {
@@ -53,6 +83,7 @@ public class SWTFramebuffer extends Framebuffer {
 	private SWTFramebuffer(WrappedGLCanvas canvas) {
 		super(100, 100);
 		this.glCanvas = canvas;
+		refreshingThread.start();
 	}
 	
 	public SWTFramebuffer(Composite parent, int style) {
@@ -76,36 +107,30 @@ public class SWTFramebuffer extends Framebuffer {
 				
 				try {
 					clearDrawingStack();
-					if (renderMethod != null && loadedRenderableInstance != null) {
-						
-						// Beginning the drawing process outside of a Renderable
-						beginDrawing();
-						renderMethod.invoke(loadedRenderableInstance, SWTFramebuffer.this);
-						// Ending the drawing process outside of a Renderable
-						endDrawing();
-						
-						checkStackClear();
-						//setMessageException(null);
-					} else {
+
+					if (handler != null) handler.draw(SWTFramebuffer.this);
+					checkStackClear();
+
+					/*else {
 						GL3W.glClearColor(0.4f, 0.2f, 0.2f, 1.0f);
 						GL3W.glClear(GL3W.GL_COLOR_BUFFER_BIT | GL3W.GL_STENCIL_BUFFER_BIT | GL3W.GL_DEPTH_BUFFER_BIT);
-					}
+					}*/
 				} catch (IllegalAccessException | IllegalArgumentException e1) {
 					//e1.printStackTrace();
-					if (exceptionHandler != null) exceptionHandler.handle(e1);
+					if (handler != null) handler.handleException(e1);
 					//setMessageException(e1);
 				} catch (InvocationTargetException e1) {
 					//e1.printStackTrace();
 					if (e1.getCause() instanceof Error) {
-						if (exceptionHandler != null) exceptionHandler.handle(new RuntimeException("Can't execute the file. That probably means compilation error. Check Problems list", e1));
+						if (handler != null) handler.handleException(new RuntimeException("Can't execute the file. That probably means compilation error. Check Problems list", e1));
 					} else {
-						if (exceptionHandler != null) exceptionHandler.handle(e1.getCause());
+						if (handler != null) handler.handleException(e1.getCause());
 					}
 				}
 				catch (Exception e2) {
 					//e2.printStackTrace();
 					//setMessageException(e2);
-					if (exceptionHandler != null) exceptionHandler.handle(e2);
+					if (handler != null) handler.handleException(e2);
 				}
 				
 				glCanvas.swapBuffers();
@@ -127,11 +152,11 @@ public class SWTFramebuffer extends Framebuffer {
 		super.checkStackClear();
 	}*/
 	
-	public void setRenderMethod(Object loadedRenderableInstance, Method renderMethod) {
+	/*public void setRenderMethod(Object loadedRenderableInstance, Method renderMethod) {
 		this.renderMethod = renderMethod;
 		this.loadedRenderableInstance = loadedRenderableInstance;
 		//refresh();
-	}
+	}*/
 
 	public void redraw() {
 		glCanvas.redraw();
@@ -139,6 +164,7 @@ public class SWTFramebuffer extends Framebuffer {
 	
 	public void dispose() {
 		if (!glCanvas.isDisposed()) glCanvas.dispose();
+		if (refreshingThread != null) refreshingThread.killSelf = true;
 	}
 	
 	public boolean isDisposed() {

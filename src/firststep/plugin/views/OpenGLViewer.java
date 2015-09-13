@@ -1,5 +1,6 @@
 package firststep.plugin.views;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import org.eclipse.jface.viewers.ISelection;
@@ -8,12 +9,18 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 
+import firststep.Framebuffer;
 import firststep.SWTFramebuffer;
 
 public class OpenGLViewer extends Viewer {
 	
 	private static SWTFramebuffer mainFramebuffer;
+
+	private volatile ClassLoader classLoader;
+	private volatile Object renderableInstance;
+	private volatile int currentFrame;
 
 	private RenderErrorView errorView;
 	private StackLayout stackLayout;
@@ -23,6 +30,10 @@ public class OpenGLViewer extends Viewer {
 	public SWTFramebuffer getMainFramebuffer() {
 		return mainFramebuffer;
 	}
+	
+	public void setClassLoader(ClassLoader classLoader) {
+		this.classLoader = classLoader;
+	}
 
 	public OpenGLViewer(Composite parent, int style) {
 		this.parent = parent;
@@ -31,17 +42,71 @@ public class OpenGLViewer extends Viewer {
 
 		errorView = new RenderErrorView(parent, style);
 		mainFramebuffer = new SWTFramebuffer(parent, style | SWT.NO_BACKGROUND);
-		mainFramebuffer.setExceptionHandler(new SWTFramebuffer.ExceptionHandler() {
+		mainFramebuffer.setHandler(new SWTFramebuffer.Handler() {
 			
 			@Override
-			public void handle(Throwable t) {
+			public void handleException(Throwable t) {
 				setMessageException(t);
+			}
+			
+			@Override
+			public void draw(Framebuffer framebuffer) throws Exception {
+				Class<?> framebufferClass = classLoader.loadClass("firststep.Framebuffer");
+
+				if (renderableInstance != null) {
+					
+					Class<?> renderableClass = renderableInstance.getClass();
+					
+					Method renderMethod = renderableClass.getMethod("render", framebufferClass);
+
+					// Beginning the drawing process outside of a Renderable
+					framebuffer.beginDrawing();
+					renderMethod.invoke(renderableInstance, framebuffer);
+					// Ending the drawing process outside of a Renderable
+					framebuffer.endDrawing();
+					
+					//setMessageException(null);
+				}
+			}
+			
+			@Override
+			public void frame() {
+				try {
+					Class<?> renderableInterface = classLoader.loadClass("firststep.contracts.Renderable");
+					Class<?> animatableInterface = classLoader.loadClass("firststep.contracts.Animatable");
+					Class<?> renderableClass = renderableInstance.getClass();
+					
+					if (animatableInterface.isAssignableFrom(renderableClass)) {
+						
+						Method getFrameCountMethod = renderableClass.getMethod("getFrameCount");
+						Method setCurrentFrame = renderableClass.getMethod("setCurrentFrame", int.class);
+						
+						int frameCount = (int) getFrameCountMethod.invoke(renderableInstance);
+						currentFrame = (currentFrame + 1) % frameCount;
+						setCurrentFrame.invoke(renderableInstance, currentFrame);
+					}
+				} catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
+					e.printStackTrace();
+				}
+				
+				Display.getDefault().syncExec(new Runnable() {
+					
+					@Override
+					public void run() {
+						if (mainFramebuffer.isDisposed()) mainFramebuffer.redraw();
+					}
+				});
 			}
 		});
 	}
 	
-	public void setRenderMethod(Object loadedRenderableInstance, Method renderMethod) {
-		mainFramebuffer.setRenderMethod(loadedRenderableInstance, renderMethod);
+	public void setNewRenderableInstance(ClassLoader classLoader, Object renderableInstance) {
+		this.classLoader = classLoader;
+		this.renderableInstance = renderableInstance;
+		this.currentFrame = 0;
+		
+		setMessageException(null);
+		refresh();
 	}
 	
 	@Override
