@@ -49,8 +49,6 @@ import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
-import firststep.Framebuffer;
-
 public class FirstStepPreviewView extends ViewPart {
 
 	/**
@@ -213,9 +211,6 @@ public class FirstStepPreviewView extends ViewPart {
 		viewer.getControl().setFocus();
 	}
 
-   	/**
-   	 * Returns a List of IClasspathEntry.
-   	 */
    	public static List getSourceContainerEntries(IJavaProject jp) throws JavaModelException {
    		List containers = new ArrayList(10);
    		IProject project = jp.getProject();
@@ -231,7 +226,23 @@ public class FirstStepPreviewView extends ViewPart {
 		
 		return containers;
    	}
-   	
+
+   	public static List<IClasspathEntry> getJarContainerEntries(IJavaProject jp) throws JavaModelException {
+   		List<IClasspathEntry> containers = new ArrayList<IClasspathEntry>(10);
+   		IProject project = jp.getProject();
+   		if(project.isAccessible() && jp.exists()) {
+			IClasspathEntry entries[] = jp.getResolvedClasspath(true);
+			for(int i=0; i<entries.length; i++) {
+				IClasspathEntry entry = entries[i];
+				if(entry.getEntryKind() == IClasspathEntry.CPE_LIBRARY) {
+					containers.add(entry);
+				}
+			}
+   		}
+		
+		return containers;
+   	}
+
    	private static IClasspathEntry getSourceContainerEntry(IContainer container) throws JavaModelException {
     	IJavaProject jp = JavaCore.create(container.getProject());
    		List entries = getSourceContainerEntries(jp);
@@ -397,6 +408,9 @@ public class FirstStepPreviewView extends ViewPart {
 			// Constructing the target .class files folder
 			// 1. Getting the raw path to the project
 			IPath rawProjectPath = javaProject.getProject().getRawLocation();
+			if (rawProjectPath == null) {
+				rawProjectPath = javaProject.getProject().getLocation();
+			}
 			// 2. Getting the output path related to the workspace root
 			IPath outputPath = javaProject.getOutputLocation();
 			// 3. Cutting away the project folder from it
@@ -405,17 +419,23 @@ public class FirstStepPreviewView extends ViewPart {
 			IPath targetPath = rawProjectPath.append(outputPath).addTrailingSeparator();
 			
 			URL classURL = targetPath.toFile().toURI().toURL();
-
+			ArrayList<URL> urls = new ArrayList<URL>();
+			urls.add(classURL);
+			List<IClasspathEntry> l = getJarContainerEntries(javaProject);
+			for (IClasspathEntry e : l) {
+				urls.add(e.getPath().toFile().toURI().toURL());
+			}
 			
 			for (IType tp : renderableTypes) {
 
-				try (URLClassLoader ucl = new URLClassLoader(new URL[] { classURL }, Framebuffer.class.getClassLoader())) {
+				try (URLClassLoader ucl = new URLClassLoader(urls.toArray(new URL[] {}), getClass().getClassLoader())) {
 					
 					Class<?> loadedRenderableClass = ucl.loadClass(tp.getFullyQualifiedName());
+					Class<?> framebufferClass = ucl.loadClass("firststep.Framebuffer");
 						
 					Constructor<?> loadedRenderableConstructor = loadedRenderableClass.getConstructor();
 					Object loadedRenderableInstance = loadedRenderableConstructor.newInstance();
-					Method testMethod = loadedRenderableClass.getMethod("render", Framebuffer.class);
+					Method testMethod = loadedRenderableClass.getMethod("render", framebufferClass);
 
 					viewer.setRenderMethod(loadedRenderableInstance, testMethod);
 					viewer.setMessageException(null);

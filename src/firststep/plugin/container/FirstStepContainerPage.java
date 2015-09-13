@@ -63,7 +63,7 @@ public class FirstStepContainerPage extends WizardPage implements IClasspathCont
 	@Override
 	public IClasspathEntry getSelection() {
 		if (selection == null) {
-			selection = JavaCore.newContainerEntry(FirstStepContainer.ID); 
+			selection = JavaCore.newContainerEntry(FirstStepContainer.ID_PATH); 
 		}
 		return selection;
 	}

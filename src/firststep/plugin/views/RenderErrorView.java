@@ -69,8 +69,11 @@ public class RenderErrorView extends Composite {
 		this.exception = exception;
 		lblErrorText.setText(exception.getLocalizedMessage());
 		StringBuilder sb = new StringBuilder();
+		sb.append("Exception class ");
+		sb.append(exception.getClass().getCanonicalName());
+		sb.append("\n");
 		for (int i = 0; i < exception.getStackTrace().length; i++) {
-			sb.append("at ");
+			sb.append("  at ");
 			sb.append(exception.getStackTrace()[i].toString());
 			sb.append('\n');
 		}

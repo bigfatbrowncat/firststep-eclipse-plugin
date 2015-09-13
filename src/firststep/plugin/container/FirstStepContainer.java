@@ -20,7 +20,9 @@ import org.osgi.framework.Bundle;
 import firststep.plugin.Logger;
 
 public class FirstStepContainer implements IClasspathContainer {
-    public static final Path ID = new Path("firststep.plugin.container.FIRSTSTEP_CONTAINER");
+    public static final String ID = "firststep.plugin.container.FIRSTSTEP_CONTAINER";
+    public static final Path ID_PATH = new Path(ID);
+    
     private static final String TITLE = "FirstStep Library";
 
     private IPath containerPath;
@@ -71,7 +73,7 @@ public class FirstStepContainer implements IClasspathContainer {
     }
 
     public int getKind() {
-        return IClasspathContainer.K_APPLICATION;
+        return IClasspathContainer.K_SYSTEM;
     }
 
     public IPath getPath() {

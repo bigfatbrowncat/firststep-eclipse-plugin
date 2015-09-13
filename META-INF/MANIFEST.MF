@@ -1,4 +1,5 @@
 Manifest-Version: 1.0
+Eclipse-BundleShape: dir
 Bundle-ManifestVersion: 2
 Bundle-Name: FirstStep Eclipse Support
 Bundle-SymbolicName: firststep.plugin;singleton:=true
@@ -11,11 +12,12 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.jdt.ui,
  org.eclipse.core.runtime,
  org.eclipse.jface,
- org.eclipse.jdt.launching;bundle-version="3.8.0"
+ org.eclipse.jdt.launching;bundle-version="3.8.0",
+ org.eclipse.ui.ide;bundle-version="3.11.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: lib/firststep-java.jar,
  .
-Export-Package: firststep,
- firststep.plugin,
+Bundle-NativeCode: lib/firststep.dll; osname=win32, lib/libfirststep.dylib; osname=macos
+Export-Package: firststep, firststep.plugin,
  firststep.plugin.views

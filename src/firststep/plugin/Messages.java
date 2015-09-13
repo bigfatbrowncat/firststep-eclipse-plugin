@@ -21,7 +21,8 @@ public class Messages extends NLS {
 
     public static String PageTitle;
     
-        
+    public static String AdvancedButton, SimpleButton;   
+    public static String NewProjectTitle, NewProjectDesc;
 
     static {
         // initialize resource bundle

@@ -47,6 +47,15 @@
           class="firststep.plugin.container.FirstStepContainerPage"/>
    </extension>
 
+	<extension
+	      id="firststep.plugin.FirstStepNature"
+	      point="org.eclipse.core.resources.natures">
+	   <runtime>
+	      <run
+	         class="firststep.plugin.FirstStepNature">
+	      </run>
+	   </runtime>
+	</extension>
 <!--   <extension
          point="org.eclipse.jdt.ui.javaElementFilters">
          <filter
@@ -59,10 +68,80 @@
    </extension>-->
    
    <extension
+		point="org.eclipse.ui.newWizards">
+	   <category 
+	        id="firststep.newproject.category" 
+	        name="FirstStep">
+	   </category> 
+	  	<wizard
+			id="firststep.plugin.wizard.FirstStepProjectCreationWizard"
+			name="FirstStep Project"
+			class="firststep.plugin.wizard.FirstStepProjectCreationWizard"
+			category="firststep.newproject.category"
+			project="true"
+			finalPerspective="org.eclipse.jdt.ui.JavaPerspective"
+			icon="icons/full/ctool16/newjprj_wiz.gif">
+			<description>Create a FirstStep project</description>
+    	</wizard>
+	</extension>
+   
+   <extension
          point="org.eclipse.help.contexts">
       <contexts
             file="contexts.xml">
       </contexts>
+   </extension>
+   <extension
+         point="org.eclipse.ui.intro">
+      <intro
+            class="org.eclipse.ui.intro.config.CustomizableIntroPart"
+            id="firststep.plugin.intro">
+      </intro>
+      <introProductBinding
+            introId="firststep.plugin.intro"
+            productId="org.eclipse.platform.ide">
+      </introProductBinding>
+   </extension>
+   
+   <extension
+         point="org.eclipse.ui.intro.config">
+      <config
+            content="introContent.xml"
+            id="firststep.plugin.introConfigId"
+            introId="firststep.plugin.intro">
+         <presentation
+               home-page-id="root">
+            <implementation
+                  kind="html"
+                  os="win32,linux,macosx"
+                  style="content/shared.css">
+            </implementation>
+         </presentation>
+      </config>
+   </extension>
+   <extension
+         id="fiststep"
+         point="org.eclipse.core.runtime.products">
+      <product
+            application="org.eclipse.ui.ide.workbench"
+            name="FirstStep IDE">
+         <property
+               name="startupForegroundColor"
+               value="000000">
+         </property>
+         <property
+               name="startupProgressRect"
+               value="5,275,445,15">
+         </property>
+         <property
+               name="startupMessageRect"
+               value="7,252,445,20">
+         </property>
+         <property
+               name="appName"
+               value="FirstStep IDE">
+         </property>
+      </product>
    </extension>
    
    
