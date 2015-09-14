@@ -67,7 +67,11 @@ public class RenderErrorView extends Composite {
 	
 	public void setException(Throwable exception) {
 		this.exception = exception;
-		lblErrorText.setText(exception.getLocalizedMessage());
+		if (exception.getMessage() != null) {
+			lblErrorText.setText(exception.getMessage());
+		} else {
+			lblErrorText.setText(exception.getClass() + " (no message)");
+		}
 		StringBuilder sb = new StringBuilder();
 		sb.append("Exception class ");
 		sb.append(exception.getClass().getCanonicalName());

@@ -33,20 +33,20 @@ public class SWTFramebuffer extends Framebuffer {
 		@Override
 		public void run() {
 			while (!killSelf) {
-				if (handler != null) handler.frame();
-				Display.getDefault().syncExec(new Runnable() {
-					
-					@Override
-					public void run() {
-						if (!glCanvas.isDisposed() && glCanvas.isVisible()) {
-							glCanvas.redraw();
-						}
-					}
-				});
-				
 				try {
+					if (handler != null) handler.frame();
+					Display.getDefault().syncExec(new Runnable() {
+						
+						@Override
+						public void run() {
+							if (!glCanvas.isDisposed() && glCanvas.isVisible()) {
+								glCanvas.redraw();
+							}
+						}
+					});
+					
 					Thread.sleep(1000 / FPS);
-				} catch (InterruptedException e) {
+				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}

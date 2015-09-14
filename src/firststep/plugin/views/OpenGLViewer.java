@@ -20,7 +20,7 @@ public class OpenGLViewer extends Viewer {
 
 	private volatile ClassLoader classLoader;
 	private volatile Object renderableInstance;
-	private volatile int currentFrame;
+	private volatile long startTimeMillis;
 
 	private RenderErrorView errorView;
 	private StackLayout stackLayout;
@@ -72,30 +72,37 @@ public class OpenGLViewer extends Viewer {
 			@Override
 			public void frame() {
 				try {
-					Class<?> renderableInterface = classLoader.loadClass("firststep.contracts.Renderable");
-					Class<?> animatableInterface = classLoader.loadClass("firststep.contracts.Animatable");
-					Class<?> renderableClass = renderableInstance.getClass();
-					
-					if (animatableInterface.isAssignableFrom(renderableClass)) {
+					if (classLoader != null && renderableInstance != null) {
+						Class<?> renderableInterface = classLoader.loadClass("firststep.contracts.Renderable");
+						Class<?> animatableInterface = classLoader.loadClass("firststep.contracts.Animatable");
+						Class<?> renderableClass = renderableInstance.getClass();
 						
-						Method getFrameCountMethod = renderableClass.getMethod("getFrameCount");
-						Method setCurrentFrame = renderableClass.getMethod("setCurrentFrame", int.class);
-						
-						int frameCount = (int) getFrameCountMethod.invoke(renderableInstance);
-						currentFrame = (currentFrame + 1) % frameCount;
-						setCurrentFrame.invoke(renderableInstance, currentFrame);
+						if (animatableInterface.isAssignableFrom(renderableClass)) {
+							
+							Method getDurationMethod = renderableClass.getMethod("getDuration");
+							Method setCurrentTime = renderableClass.getMethod("setCurrentTime", float.class);
+							
+							Float timeDuration = (Float) getDurationMethod.invoke(renderableInstance);
+							long curTimeMillis = System.currentTimeMillis();
+							float curTimeFloat = (float)(curTimeMillis - startTimeMillis) / 1000;
+							if (timeDuration != null) {
+								while (curTimeFloat > timeDuration) curTimeFloat -= timeDuration;
+								startTimeMillis = (long)(curTimeMillis - 1000 * curTimeFloat);
+							}
+							setCurrentTime.invoke(renderableInstance, curTimeFloat);
+						}
 					}
 				} catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
 					e.printStackTrace();
 				}
 				
-				Display.getDefault().syncExec(new Runnable() {
+				/*Display.getDefault().syncExec(new Runnable() {
 					
 					@Override
 					public void run() {
-						if (mainFramebuffer.isDisposed()) mainFramebuffer.redraw();
+						if (!mainFramebuffer.isDisposed()) mainFramebuffer.redraw();
 					}
-				});
+				});*/
 			}
 		});
 	}
@@ -103,7 +110,7 @@ public class OpenGLViewer extends Viewer {
 	public void setNewRenderableInstance(ClassLoader classLoader, Object renderableInstance) {
 		this.classLoader = classLoader;
 		this.renderableInstance = renderableInstance;
-		this.currentFrame = 0;
+		this.startTimeMillis = System.currentTimeMillis();
 		
 		setMessageException(null);
 		refresh();
