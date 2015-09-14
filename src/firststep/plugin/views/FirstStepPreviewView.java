@@ -212,8 +212,8 @@ public class FirstStepPreviewView extends ViewPart {
 		viewer.getControl().setFocus();
 	}
 
-   	public static List getSourceContainerEntries(IJavaProject jp) throws JavaModelException {
-   		List containers = new ArrayList(10);
+   	public static List<IClasspathEntry> getSourceContainerEntries(IJavaProject jp) throws JavaModelException {
+   		List<IClasspathEntry> containers = new ArrayList<>(10);
    		IProject project = jp.getProject();
    		if(project.isAccessible() && jp.exists()) {
 			IClasspathEntry entries[] = jp.getResolvedClasspath(true);
@@ -321,64 +321,28 @@ public class FirstStepPreviewView extends ViewPart {
 		return res;
 	}
 	
-/*	public class CCLoader extends ClassLoader {
-		//private HashMap<Class<?>> classes = new HashSet<>();
-		private Class<?> theClass;
-		private String className;
-		private byte[] classdata = null;
-
-		public CCLoader(ClassLoader classLoader) {
-			super(classLoader);
-		}
-
-		public void setClassContent(String name, IClassFile classFile) throws JavaModelException {
-			className = name;
-			byte[] data = classFile.getBytes();
-			classdata = new byte[data.length];
-			System.arraycopy(data, 0, classdata, 0, data.length);
-		}
-
-		public Class<?> loadClass(String name) throws ClassNotFoundException {
-			return findClass(name);
-		}
-
-		@Override
-		public Class<?> findClass(String name) throws ClassNotFoundException {
-			Class<?> result = null;
-			try {
-				if (name.replace('/', '.').equals(className)) {
-					if (theClass == null) {
-						theClass = defineClass(name, this.classdata, 0, this.classdata.length, null);
-					}
-					result = theClass;
-				} else {
-					result = super.findClass(name);
-				}
-				return result;
-			} catch (SecurityException se) {
-				
-			} catch (Exception e) {
-				System.out.println(e.toString());
-				return null;
+	private boolean findSuperInterfaceRecursively(ClassLoader classLoader, IType t, String pkg, String name) throws JavaModelException, ClassNotFoundException {
+		Class<?> clz = classLoader.loadClass(t.getFullyQualifiedName());
+		Class<?> iface = classLoader.loadClass(pkg + "." + name);
+		return findSuperInterfaceRecursively(classLoader, clz, iface);
+	}
+	
+	private boolean findSuperInterfaceRecursively(ClassLoader classLoader, Class<?> clz, Class<?> iface) throws JavaModelException, ClassNotFoundException {
+		if (clz == null) return false;
+		if (clz.getInterfaces() != null) {
+			for (Class<?> intf : clz.getInterfaces()) {
+				if (intf.equals(iface)) return true;
+				if (findSuperInterfaceRecursively(classLoader, intf, iface)) return true;
 			}
-			return result;
 		}
-
-	}*/
-	private void appendBySuperInterface(ArrayList<IType> res, Map<IType, IClassFile> classFiles, String pkg, String name) throws JavaModelException {
+		if (findSuperInterfaceRecursively(classLoader, clz.getSuperclass(), iface)) return true;
+		return false;
+	}
+	
+	private void appendBySuperInterface(ClassLoader classLoader, ArrayList<IType> res, Map<IType, IClassFile> classFiles, String pkg, String name) throws JavaModelException, ClassNotFoundException {
     	ArrayList<IType> filteredTypes = res;
 		for (IType t : classFiles.keySet()) {
-			// Checking if superinterfaces list contains "firststep.Renderable"
-			for (String sits : t.getSuperInterfaceNames()) {
-				String[][] qname = t.resolveType(sits);
-				if (qname != null && qname.length == 1 && 
-						qname[0][0].equals(pkg) && 
-						qname[0][1].equals(name)) {
-					
-					filteredTypes.add(t);
-					break;
-				}
-			}
+			if (findSuperInterfaceRecursively(classLoader, t, pkg, name)) filteredTypes.add(t);
 		}
 	}
 	
@@ -407,19 +371,17 @@ public class FirstStepPreviewView extends ViewPart {
 	}
 	
 	private boolean drawRenderable(IJavaProject javaProject, Map<IType, IClassFile> classFiles) throws JavaModelException, IOException, ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-    	ArrayList<IType> renderableTypes = new ArrayList<>();
-    	appendBySuperInterface(renderableTypes, classFiles, "firststep.contracts", "Renderable");
-    	appendBySuperInterface(renderableTypes, classFiles, "firststep.contracts", "Animatable");
-		
-		if (renderableTypes.size() == 0) return false;
-
 		List<URL> urls = listClasspathURLs(javaProject);
-		
-		IType tp = renderableTypes.get(0);	// TODO Support multiple types
-		{
-
-			try (URLClassLoader ucl = new URLClassLoader(urls.toArray(new URL[] {}), getClass().getClassLoader())) {
-				
+		try (URLClassLoader ucl = new URLClassLoader(urls.toArray(new URL[] {}), getClass().getClassLoader())) {
+	    	ArrayList<IType> renderableTypes = new ArrayList<>();
+	    	appendBySuperInterface(ucl, renderableTypes, classFiles, "firststep.contracts", "Renderable");
+	    	appendBySuperInterface(ucl, renderableTypes, classFiles, "firststep.contracts", "Animatable");
+			
+			if (renderableTypes.size() == 0) return false;
+	
+			
+			IType tp = renderableTypes.get(0);	// TODO Support multiple types
+			{
 				Class<?> loadedRenderableClass = ucl.loadClass(tp.getFullyQualifiedName());
 				//Class<?> framebufferClass = ucl.loadClass("firststep.Framebuffer");
 					
