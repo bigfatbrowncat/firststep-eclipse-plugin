@@ -10,6 +10,7 @@ import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IPartListener;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -72,11 +73,9 @@ public class Activator extends AbstractUIPlugin {
 			if (window != null) {
 				FirstStepPreviewView view = (FirstStepPreviewView)window.getActivePage().findView(FirstStepPreviewView.ID);
 				if (view != null) {
-					
-					view.updateImage(firstStepClassLoader);
+					view.updateImage();
 				}
 			}
-			
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -121,14 +120,16 @@ public class Activator extends AbstractUIPlugin {
 			PlatformUI.getWorkbench().getActiveWorkbenchWindow().getPartService().addPartListener(new IPartListener() {
 				
 				@Override
-				public void partOpened(IWorkbenchPart part) { }
+				public void partOpened(IWorkbenchPart part) { 
+					updateGraphicsView();
+				}
 				
 				@Override
 				public void partDeactivated(IWorkbenchPart part) { }
 				
 				@Override
 				public void partClosed(IWorkbenchPart part) {
-					updateGraphicsView();
+					//updateGraphicsView();
 				}
 				
 				@Override
@@ -136,7 +137,9 @@ public class Activator extends AbstractUIPlugin {
 				
 				@Override
 				public void partActivated(IWorkbenchPart part) {
-					updateGraphicsView();
+					if (part instanceof IEditorPart) {
+						updateGraphicsView();
+					}
 				}
 			});
 		}

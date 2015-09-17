@@ -1,8 +1,6 @@
 package firststep.plugin.views;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -18,7 +16,6 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StackLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
 
 import firststep.SWTFramebuffer;
 import firststep.SWTFramebufferHandler;
@@ -102,7 +99,9 @@ public class OpenGLViewer extends Viewer {
 							}
 							setCurrentTime.invoke(renderableInstance, curTimeFloat);
 						}
-					}
+					} /*else {
+						System.out.println("Empty");
+					}*/
 				} catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
 					e.printStackTrace();
 				}
@@ -195,14 +194,6 @@ public class OpenGLViewer extends Viewer {
 		}
 	}
 	public boolean drawRenderable(ClassLoader ucl, Map<IType, IClassFile> classFiles) throws JavaModelException, IOException, ReflectiveOperationException {
-		//if (ucl != null) ucl.close();
-		//ucl = new URLClassLoader(urls.toArray(new URL[] {}), new MyClassLoader());
-		InputStream is = ucl.getResourceAsStream("/firststep/demo/ClearSans-Bold.ttf");
-		System.out.println(is);
-		if (is == null) {
-			System.out.println(((Boolean)(new File("C:/mm/msys/home/imizus/Projects/firststep-demo/bin/firststep/demo/ClearSans-Bold.ttf").exists())).toString());
-		}
-
 		ArrayList<IType> renderableTypes = new ArrayList<>();
     	appendBySuperInterface(ucl, renderableTypes, classFiles, "firststep.contracts", "Renderable");
     	appendBySuperInterface(ucl, renderableTypes, classFiles, "firststep.contracts", "Animatable");
@@ -215,7 +206,6 @@ public class OpenGLViewer extends Viewer {
 		if (mainFramebuffer != null && mainFramebuffer.getPrimaryFramebuffer() != null)
 		{
 			Class<?> loadedRenderableClass = ucl.loadClass(tp.getFullyQualifiedName());
-			//Class<?> framebufferClass = ucl.loadClass("firststep.Framebuffer");
 				
 			Constructor<?> loadedRenderableConstructor = loadedRenderableClass.getConstructor();
 			loadedRenderableInstance = loadedRenderableConstructor.newInstance();

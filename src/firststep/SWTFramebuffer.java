@@ -141,7 +141,6 @@ public class SWTFramebuffer {
 					framebufferClassCheckStackClearMethod = framebufferClass.getDeclaredMethod("checkStackClear");
 					framebufferClassCheckStackClearMethod.setAccessible(true);
 				} catch (ReflectiveOperationException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 
@@ -206,27 +205,20 @@ public class SWTFramebuffer {
 		}
 	}
 
-	/*@Override
-	public void clearDrawingStack() {
-		super.clearDrawingStack();
-	}
-	
-	@Override
-	public void checkStackClear() {
-		super.checkStackClear();
-	}*/
-	
-	/*public void setRenderMethod(Object loadedRenderableInstance, Method renderMethod) {
-		this.renderMethod = renderMethod;
-		this.loadedRenderableInstance = loadedRenderableInstance;
-		//refresh();
-	}*/
-
 	public void redraw() {
 		glCanvas.redraw();
 	}
 	
 	public void dispose() {
+		try {
+			Class<?> framebufferClass = Class.forName("firststep.Framebuffer", true, classLoader);
+			Method framebufferClassDeleteMethod = framebufferClass.getMethod("delete");
+			primaryFramebuffer = framebufferClassDeleteMethod.invoke(primaryFramebuffer);
+		} catch (ReflectiveOperationException e) {
+			e.printStackTrace();
+		}
+
+		
 		if (!glCanvas.isDisposed()) glCanvas.dispose();
 		if (refreshingThread != null) refreshingThread.killSelf = true;
 	}

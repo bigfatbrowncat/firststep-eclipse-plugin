@@ -51,6 +51,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.ViewPart;
 
 import firststep.SWTFramebuffer;
+import firststep.plugin.Activator;
 import tools.JavaTools;
 
 public class FirstStepPreviewView extends ViewPart {
@@ -312,19 +313,15 @@ public class FirstStepPreviewView extends ViewPart {
 		return res;
 	}
 	
-
-	
-
-	
-
-	
-	public void updateImage(ClassLoader classLoader) {
+	public void updateImage() {
 		URLClassLoader ucl = null;
 		
 		try {
 			IWorkbenchPart workbenchPart = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
 			URI workspacePath = ResourcesPlugin.getWorkspace().getRoot().getLocation().toFile().toURI();
 
+			if (workbenchPart == null) return;
+			
 			IEditorPart editor = (IEditorPart) workbenchPart.getSite().getPage().getActiveEditor();
 			if (editor == null) throw new FileNotFoundException("No java editor open");
 			
@@ -341,17 +338,7 @@ public class FirstStepPreviewView extends ViewPart {
 
 			List<URL> urls = listClasspathURLs(javaProject);
 
-			ucl = new URLClassLoader(urls.toArray(new URL[] {}), classLoader);
-
-			/*Class<?> nl = ucl.loadClass("firststep.internal.NativeLoader");
-			if (nl != null) {
-				System.out.println("NativeLoader started");
-			}
-			Class<?> nvgc = ucl.loadClass("firststep.internal.NVG$Color");
-			if (nvgc != null) {
-				System.out.println("NVG.Color started");
-			}*/
-
+			ucl = new URLClassLoader(urls.toArray(new URL[] {}), Activator.getFirstStepClassLoader());
 
 			
 			Map<IType, IClassFile> classFiles = getClassFilesForAllTypesInFile(file.getProject(), file);
