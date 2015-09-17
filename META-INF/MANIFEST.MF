@@ -19,5 +19,5 @@ Bundle-ActivationPolicy: lazy
 Bundle-ClassPath: lib/firststep-java.jar,
  .
 Bundle-NativeCode: lib/firststep.dll; osname=win32, lib/libfirststep.dylib; osname=macos
-Export-Package: firststep, firststep.plugin,
+Export-Package: firststep.plugin,
  firststep.plugin.views

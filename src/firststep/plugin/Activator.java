@@ -1,5 +1,9 @@
 package firststep.plugin;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IWorkspace;
@@ -32,13 +36,49 @@ public class Activator extends AbstractUIPlugin {
 	public Activator() {
 	}
 
-	private void updateGraphicsView() {
-		IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-		if (window != null) {
-			FirstStepPreviewView view = (FirstStepPreviewView)window.getActivePage().findView(FirstStepPreviewView.ID);
-			if (view != null) {
-				view.updateImage();
+	private static class FirstStepClassLoader extends URLClassLoader {
+		private String path;
+		
+		public FirstStepClassLoader(String path) throws MalformedURLException {
+			super(new URL[] { new URL("file://" + path + "/firststep-java.jar") }, FirstStepClassLoader.class.getClassLoader());
+			this.path = path;
+		}
+		
+		void check() {
+			try {
+				Class.forName("firststep.Window", true, this);
+			} catch (ClassNotFoundException e) {
+				throw new RuntimeException("Can't load firststep library", e);
 			}
+		}
+		
+		@Override
+		protected String findLibrary(String libname) {
+			System.out.println("Native path: " + path);
+			return path + "/" + libname + ".dll";
+		}
+
+	}
+	
+	private static FirstStepClassLoader firstStepClassLoader;
+	public static FirstStepClassLoader getFirstStepClassLoader() {
+		return firstStepClassLoader;
+	}
+	
+	private void updateGraphicsView() {
+		try {
+		
+			IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+			if (window != null) {
+				FirstStepPreviewView view = (FirstStepPreviewView)window.getActivePage().findView(FirstStepPreviewView.ID);
+				if (view != null) {
+					
+					view.updateImage(firstStepClassLoader);
+				}
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -50,7 +90,16 @@ public class Activator extends AbstractUIPlugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
-	
+
+		// TODO Get the actual path
+		try {
+			firstStepClassLoader = new FirstStepClassLoader("C:\\mm\\msys\\home\\imizus\\Projects\\firststep-eclipse-plugin\\lib");
+			firstStepClassLoader.check();
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		IWorkspace workspace = ResourcesPlugin.getWorkspace();
 		IResourceChangeListener listener = new IResourceChangeListener() {
 			public void resourceChanged(IResourceChangeEvent event) {
@@ -66,29 +115,32 @@ public class Activator extends AbstractUIPlugin {
 		workspace.addResourceChangeListener(listener, IResourceChangeEvent.POST_BUILD);
 		
 		
-		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getPartService().addPartListener(new IPartListener() {
-			
-			@Override
-			public void partOpened(IWorkbenchPart part) { }
-			
-			@Override
-			public void partDeactivated(IWorkbenchPart part) { }
-			
-			@Override
-			public void partClosed(IWorkbenchPart part) {
-				updateGraphicsView();
-			}
-			
-			@Override
-			public void partBroughtToTop(IWorkbenchPart part) { }
-			
-			@Override
-			public void partActivated(IWorkbenchPart part) {
-				updateGraphicsView();
-			}
-		});
-	}
+		if (PlatformUI.getWorkbench() != null && 
+			PlatformUI.getWorkbench().getActiveWorkbenchWindow() != null) {
 
+			PlatformUI.getWorkbench().getActiveWorkbenchWindow().getPartService().addPartListener(new IPartListener() {
+				
+				@Override
+				public void partOpened(IWorkbenchPart part) { }
+				
+				@Override
+				public void partDeactivated(IWorkbenchPart part) { }
+				
+				@Override
+				public void partClosed(IWorkbenchPart part) {
+					updateGraphicsView();
+				}
+				
+				@Override
+				public void partBroughtToTop(IWorkbenchPart part) { }
+				
+				@Override
+				public void partActivated(IWorkbenchPart part) {
+					updateGraphicsView();
+				}
+			});
+		}
+	}
 	/*
 	 * (non-Javadoc)
 	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)

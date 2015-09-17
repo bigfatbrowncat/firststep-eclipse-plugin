@@ -81,6 +81,20 @@ public class RenderErrorView extends Composite {
 			sb.append(exception.getStackTrace()[i].toString());
 			sb.append('\n');
 		}
+		
+		Throwable cause = exception.getCause();
+		while (cause != null) {
+			sb.append("Caused by ");
+			sb.append(cause.getClass().getCanonicalName());
+			sb.append("\n");
+			for (int i = 0; i < cause.getStackTrace().length; i++) {
+				sb.append("  at ");
+				sb.append(cause.getStackTrace()[i].toString());
+				sb.append('\n');
+			}
+			cause = cause.getCause();
+		}
+		
 		stacktraceText.setText(sb.toString());
 		layout();
 	}
